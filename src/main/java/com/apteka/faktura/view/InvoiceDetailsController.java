@@ -1,20 +1,32 @@
 package com.apteka.faktura.view;
 
+import com.apteka.faktura.MainApp;
 import com.apteka.faktura.core.InvoiceService;
 import com.apteka.faktura.model.Invoice;
 import com.apteka.faktura.model.InvoicePosition;
 import com.cathive.fx.guice.FXMLController;
+import com.github.sarxos.webcam.Webcam;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import com.sun.prism.impl.Disposer.Record;
+import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.util.Callback;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.Date;
@@ -69,6 +81,9 @@ public class InvoiceDetailsController {
 
     @Inject
     private InvoiceService invoiceService;
+    @FXML
+    private ImageView imgWebCamCapturedImage;
+    private ObjectProperty<Image> imageProperty = new SimpleObjectProperty<Image>();
 
 
     @Inject
@@ -143,6 +158,18 @@ public class InvoiceDetailsController {
                     lastAmount = amount;
                     addAmountToInvoice(current, amount);
                     revertButton.setDisable(false);
+
+
+                    BufferedImage image = MainApp.webcam.getImage();
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    try {
+                        ImageIO.write(image, "png", baos);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    InputStream is = new ByteArrayInputStream(baos.toByteArray());
+
+                    imgWebCamCapturedImage.setImage(new Image(is));
                 } else {
                     statusLabel.setText("badean");
                     revertButton.setDisable(true);

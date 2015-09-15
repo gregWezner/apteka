@@ -6,6 +6,7 @@ import com.apteka.faktura.view.InvoiceListController;
 import com.cathive.fx.guice.FXMLController;
 import com.cathive.fx.guice.GuiceApplication;
 import com.cathive.fx.guice.GuiceFXMLLoader;
+import com.github.sarxos.webcam.Webcam;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import javafx.application.Application;
@@ -32,6 +33,7 @@ public class MainApp extends GuiceApplication {
 
     private Stage primaryStage;
     private BorderPane rootLayout;
+    public final static Webcam webcam = Webcam.getDefault();
 
 
     /**
@@ -39,6 +41,10 @@ public class MainApp extends GuiceApplication {
      */
     private ObservableList<Invoice> invoiceData = FXCollections.observableArrayList();
     private InvoiceListController controller;
+
+    static{
+        webcam.open();
+    }
 
     @Override
     public void start(Stage primaryStage) throws IOException {
