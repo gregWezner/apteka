@@ -1,0 +1,18 @@
+.correct {
+    -fx-background-color: green;
+}
+.incorrect {
+    -fx-background-color: red;
+}
+.processed {
+    -fx-background-color: green;
+}
+
+.table-row-cell {
+    -fx-cell-size: 50px;
+    -fx-font-size: 25px;
+}
+
+.bigColumn{
+    -fx-cell-size: 50%;
+}
