@@ -19,6 +19,7 @@ import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
@@ -46,7 +47,6 @@ public class InvoiceListController {
     private InvoiceService invoiceService;
     @Inject
     private MainApp mainApp;
-    private ChangeListener<Invoice> invoiceChangeListener;
 
     private ObservableList<Invoice> invoiceData = FXCollections.observableArrayList();
 
@@ -82,36 +82,34 @@ public class InvoiceListController {
     private void initTable() {
         invoiceData.clear();
         invoiceData.addAll(invoiceService.getActiveInvoices());
+        Collections.sort(invoiceData);
         invoiceTable.setItems(invoiceData);
-        invoiceTable.setRowFactory(new Callback<TableView<Invoice>, TableRow<Invoice>>() {
-            @Override
-            public TableRow<Invoice> call(TableView<Invoice> tableView) {
-                final TableRow<Invoice> row = new TableRow<Invoice>() {
-                    @Override
-                    protected void updateItem(Invoice invoice, boolean empty) {
-                        super.updateItem(invoice, empty);
-                        if (!empty) {
-                            if (invoice.isProcessed()) {
-                                if (!getStyleClass().contains("processed")) {
-                                    getStyleClass().add("processed");
-                                }
-                            } else {
-                                getStyleClass().removeAll(Collections.singleton("processed"));
+        invoiceTable.setRowFactory(tv -> {
+            TableRow<Invoice> row = new TableRow<Invoice>() {
+                @Override
+                protected void updateItem(Invoice invoice, boolean empty) {
+                    super.updateItem(invoice, empty);
+                    if (!empty) {
+                        if (invoice.isProcessed()) {
+                            if (!getStyleClass().contains("processed")) {
+                                getStyleClass().add("processed");
                             }
+                        } else {
+                            getStyleClass().removeAll(Collections.singleton("processed"));
                         }
                     }
-                };
-                return row;
-            }
+                }
+            };
+            row.setOnMouseClicked(event -> {
+                if (!row.isEmpty()) {
+                    mainApp.showInvoiceDetails(row.getItem());
+                    Collections.sort(invoiceData);
+                    percent.setVisible(false);
+                    percent.setVisible(true);
+                }
+            });
+            return row;
         });
-
-        invoiceChangeListener = (observable, oldValue, newValue) -> {
-            mainApp.showInvoiceDetails(newValue);
-            percent.setVisible(false);
-            percent.setVisible(true);
-        };
-        invoiceTable.getSelectionModel().selectedItemProperty().addListener(
-                invoiceChangeListener);
     }
 
 

@@ -4,7 +4,7 @@ import javafx.beans.property.*;
 
 import java.util.Date;
 
-public class Invoice {
+public class Invoice implements Comparable<Invoice>{
 
     private final StringProperty invoiceNo;
     private final IntegerProperty dokfId;
@@ -72,13 +72,9 @@ public class Invoice {
         return issueDate;
     }
 
-    public Invoice withAmountOfProcessedGoods(int amount) {
+    public Invoice withAmountOfProcessedGoods(long amount) {
         this.amountOfProcessedGoods =amount;
-        return this;
-    }
-
-    public Invoice withStatus(int status) {
-        this.status = status;
+        this.status = (amountOfProcessedGoods==noOfPositions.get() ? 1 : 0);
         return this;
     }
 
@@ -92,5 +88,21 @@ public class Invoice {
 
     public void setAmountOfProcessedGoods(Long amountOfProcessedGoods) {
         this.amountOfProcessedGoods = amountOfProcessedGoods;
+        this.status = (amountOfProcessedGoods==noOfPositions.get() ? 1 : 0);
+    }
+
+    @Override
+    public int compareTo(Invoice o) {
+        if(!this.isProcessed()) {
+            if (o.isProcessed())
+                return o.dokfId.get() - dokfId.get();
+            else
+                return -1;
+        } else{
+            if (o.isProcessed())
+                return o.dokfId.get() - dokfId.get();
+            else
+                return 1;
+        }
     }
 }

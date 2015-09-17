@@ -126,7 +126,7 @@ public class InvoicePosition implements Comparable<InvoicePosition>{
 //        return -9999 != ilosc.get() && ilosc.get()!=ilzkl.get();
 //    }
 
-    public boolean isToValidate() {
+    public boolean isZero() {
         return 0 == ilosc.get();
     }
 
@@ -157,7 +157,7 @@ public class InvoicePosition implements Comparable<InvoicePosition>{
     public String getStatus() {
         if(isCorrect()){
             return "ok";
-        } else if(isToValidate()){
+        } else if(isZero()){
             return "brak";
         } else if(isOverflow()){
             return "nadw";
@@ -186,11 +186,12 @@ public class InvoicePosition implements Comparable<InvoicePosition>{
 
     @Override
     public int compareTo(InvoicePosition o) {
-        if(this.isOpen())
+        if(this.isOpen()) {
             if (o.isOpen())
                 return o.id - id;
             else
                 return -1;
+        }
         else if(this.isOverflow()){
             if(o.isOpen())
                 return 1;

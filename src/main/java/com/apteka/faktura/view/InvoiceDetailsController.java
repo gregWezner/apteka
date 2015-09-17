@@ -5,7 +5,6 @@ import com.apteka.faktura.core.InvoiceService;
 import com.apteka.faktura.model.Invoice;
 import com.apteka.faktura.model.InvoicePosition;
 import com.cathive.fx.guice.FXMLController;
-import com.github.sarxos.webcam.Webcam;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import com.sun.prism.impl.Disposer.Record;
@@ -272,7 +271,7 @@ public class InvoiceDetailsController {
                     styleClass.add("incorrect");
                 }
                 styleClass.removeAll(Collections.singleton("correct"));
-            } else if (invoicePosition.isToValidate()) {
+            } else if (invoicePosition.isZero()) {
                 styleClass.removeAll(Collections.singleton("correct"));
                 styleClass.removeAll(Collections.singleton("incorrect"));
             }
@@ -291,7 +290,7 @@ public class InvoiceDetailsController {
 
     public Long getAmountOfProcessedGoods() {
         return invoicePositionData.stream()
-                .filter(ip->!ip.isToValidate())
+                .filter(ip->!ip.isOpen())
                 .collect(Collectors.counting());
     }
 
@@ -320,7 +319,7 @@ public class InvoiceDetailsController {
             super.updateItem(t, empty);
             if (!empty) {
                 InvoicePosition current = (InvoicePosition) ButtonCell.this.getTableView().getItems().get(ButtonCell.this.getIndex());
-                if(current.isToValidate()){
+                if(current.isZero()){
                     setGraphic(cellButton);
                 } else {
                     setGraphic(null);

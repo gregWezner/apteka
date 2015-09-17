@@ -20,12 +20,6 @@
 -->
 <mapper namespace="com.apteka.faktura.model.ProcessedInvoiceMapper">
 
-    <select id="getProcessedInvoice" resultType="com.apteka.faktura.model.ProcessedInvoice" parameterType="java.lang.Integer">
-        select count(*) as amount,
-        (select status from fry where iddokf = #{value}) as status
-        from (select DISTINCT idkzak as lpoz from kody where iddokf = #{value} and idkzak > 0)
-    </select>
-
     <select id="getScannedProductAmount" resultType="int" parameterType="java.lang.Integer">
         select COALESCE(sum(ilosc),0) from kody where idkzak = #{value}
     </select>

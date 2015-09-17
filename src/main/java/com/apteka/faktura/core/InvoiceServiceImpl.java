@@ -12,6 +12,7 @@ import org.apache.ibatis.session.SqlSessionFactory;
 import org.mybatis.guice.transactional.Transactional;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
 
@@ -41,16 +42,10 @@ public class InvoiceServiceImpl implements InvoiceService {
         try {
             List<Invoice> invoices = session.getMapper(InvoiceMapper.class).getAllInvoices(invoiceParameter);
             invoices.stream()
-                    .forEach(i->{
-                        SqlSession session1 = sqlSessionFactory1.openSession();
-                        try {
-                            ProcessedInvoice processedInvoice = session1.getMapper(ProcessedInvoiceMapper.class).getProcessedInvoice(i.getDokfId());
-                            i.withAmountOfProcessedGoods(processedInvoice.getAmount())
-                                .withStatus(processedInvoice.getStatus());
-                        } finally {
-                            session1.close();
-                        }
-                    });
+                    .forEach(i-> i.withAmountOfProcessedGoods(
+                            getInvoicePositions(i.getDokfId()).stream()
+                                    .filter(ip -> !ip.isOpen())
+                                    .collect(Collectors.counting())));
             return invoices;
         } finally {
             session.close();
