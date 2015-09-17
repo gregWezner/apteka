@@ -4,7 +4,7 @@ import javafx.beans.property.*;
 
 import java.util.Date;
 
-public class InvoicePosition {
+public class InvoicePosition implements Comparable<InvoicePosition>{
     private final StringProperty nazwa;
     private final int idtowr;
     private final StringProperty kodKr;
@@ -166,11 +166,45 @@ public class InvoicePosition {
         }
     }
 
-    public void addAmount(int amount) {
-        this.ilosc.setValue(ilosc.get() + amount);
+    public int addAmount(int amount) {
+        int possibleAmountToAdd = ilzkl.get() - ilosc.get();
+        int amountToAdd = Math.min(amount, possibleAmountToAdd);
+        if(possibleAmountToAdd<0){
+            amountToAdd = amount;
+        }
+        this.ilosc.setValue(ilosc.get() + amountToAdd);
+        return amount - amountToAdd;
     }
 
     public boolean isOpen() {
         return ilosc.get()<ilzkl.get();
+    }
+
+    public void forceAddAmount(int amount) {
+        this.ilosc.setValue(ilosc.get() + amount);
+    }
+
+    @Override
+    public int compareTo(InvoicePosition o) {
+        if(this.isOpen())
+            if (o.isOpen())
+                return o.id - id;
+            else
+                return -1;
+        else if(this.isOverflow()){
+            if(o.isOpen())
+                return 1;
+            else {
+                if (o.isOverflow())
+                    return o.id - id;
+                else
+                    return -1;
+            }
+        } else{
+            if (o.isCorrect())
+                return o.id - id;
+            else
+                return 1;
+        }
     }
 }

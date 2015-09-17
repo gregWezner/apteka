@@ -27,7 +27,7 @@
     </select>
 
     <select id="getScannedProductAmount" resultType="int" parameterType="java.lang.Integer">
-        select COALESCE(sum(ilosc),-9999) from kody where idkzak = #{value}
+        select COALESCE(sum(ilosc),0) from kody where idkzak = #{value}
     </select>
 
     <insert id="insertScannedProductAmount" useGeneratedKeys="true" parameterType="com.apteka.faktura.model.ScannedProduct">

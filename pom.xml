@@ -59,6 +59,12 @@
             <artifactId>webcam-capture</artifactId>
             <version>0.3.10</version>
         </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>1.9.5</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <properties>

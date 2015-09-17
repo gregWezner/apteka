@@ -12,6 +12,7 @@ import com.sun.prism.impl.Disposer.Record;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -28,10 +29,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
-import java.util.Collections;
-import java.util.Date;
-import java.util.Optional;
-import java.util.ResourceBundle;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @FXMLController
@@ -60,7 +58,7 @@ public class InvoiceDetailsController {
     @FXML
     private TableColumn<InvoicePosition, Number> ilosc;
     @FXML
-    private TextField amount;
+    TextField amount;
     @FXML
     private TextField ean;
     @FXML
@@ -92,8 +90,7 @@ public class InvoiceDetailsController {
 
     private ObservableList<InvoicePosition> invoicePositionData = FXCollections.observableArrayList();
     private Invoice invoice;
-    private InvoicePosition lastInvoicePosition;
-    private int lastAmount;
+    private Map<InvoicePosition, Integer> dataToRevert = new HashMap<>();
 
     /**
      * The constructor.
@@ -148,65 +145,106 @@ public class InvoiceDetailsController {
         col_action.setCellFactory(
                 p -> new ButtonCell());
 
-        ean.focusedProperty().addListener((arg0, oldPropertyValue, newPropertyValue) -> {
+        ChangeListener<Boolean> badean = (arg0, oldPropertyValue, newPropertyValue) -> {
             if (!newPropertyValue) {
-                Optional<InvoicePosition> any = getCurrentInvoicePosition();
-                if (any.isPresent()) {
-                    InvoicePosition current = any.get();
-                    lastInvoicePosition = current;
-                    int amount = getAmount();
-                    lastAmount = amount;
-                    addAmountToInvoice(current, amount);
-                    revertButton.setDisable(false);
-
-
-                    BufferedImage image = MainApp.webcam.getImage();
-                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                    try {
-                        ImageIO.write(image, "png", baos);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                    InputStream is = new ByteArrayInputStream(baos.toByteArray());
-
-                    imgWebCamCapturedImage.setImage(new Image(is));
+                List<InvoicePosition> invoicePositions = getCurrentInvoicePosition();
+                if (!invoicePositions.isEmpty() && getAmount() > 0) {
+                    addAmountToInvoicePositions(invoicePositions);
+                    revertButton.setDisable(dataToRevert.isEmpty());
+                    imgWebCamCapturedImage.setImage(new Image(takeImage()));
                 } else {
-                    statusLabel.setText("badean");
+                    if (invoicePositions.isEmpty()) {
+                        statusLabel.setText("badean");
+                    } else {
+                        statusLabel.setText("negativeAmount");
+                    }
                     revertButton.setDisable(true);
                 }
             }
-        });
+        };
+        ean.focusedProperty().addListener(badean);
         revertButton.setOnMouseClicked(event -> {
-            if (lastInvoicePosition !=null) {
-                addAmountToInvoice(lastInvoicePosition, -lastAmount);
+            if (!dataToRevert.isEmpty()) {
+                for (Map.Entry<InvoicePosition, Integer> toRevert : dataToRevert.entrySet()) {
+                    toRevert.getKey().addAmount(-toRevert.getValue());
+                    invoiceService.saveInvoice(toRevert.getKey(), -toRevert.getValue());
+                    refreshTable();
+                }
+                dataToRevert.clear();
                 revertButton.setDisable(true);
             }
         });
     }
 
-    private void addAmountToInvoice(InvoicePosition current, int amount) {
-        current.addAmount(amount);
-        invoiceService.saveInvoice(current, amount);
+    int addAmountToInvoicePositions(List<InvoicePosition> invoicePositions) {
+        dataToRevert.clear();
+        int amount = getAmount();
+        for (InvoicePosition ip : invoicePositions) {
+            while (ip.isOpen()) {
+                int prevAmount = amount;
+                amount = addAmountToInvoice(ip, amount);
+                dataToRevert.put(ip,prevAmount-amount);
+                if(amount<=0){
+                    break;
+                }
+            }
+        }
+        if(amount>0){
+            InvoicePosition current = invoicePositions.get(0);
+            current.forceAddAmount(amount);
+            if (dataToRevert.containsKey(current)) {
+                dataToRevert.put(current,dataToRevert.get(current)+amount);
+            } else {
+                dataToRevert.put(current,amount);
+            }
+            invoiceService.saveInvoice(current, amount);
+            refreshTable();
+            seriaLabel.setText(current.getSeria());
+            nameLabel.setText(current.getNazwa());
+            priceLabel.setText(Double.valueOf(current.getCena()).toString());
+            dataLabel.setText(new SimpleDateFormat("dd-MM-yyyy").format(current.getData()));
+            statusLabel.setText(current.getStatus());
+            amount = 0;
+        }
+        return amount;
+    }
+
+    private InputStream takeImage() {
+        BufferedImage image = MainApp.webcam.getImage();
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try {
+            ImageIO.write(image, "png", baos);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return new ByteArrayInputStream(baos.toByteArray());
+    }
+
+    private int addAmountToInvoice(InvoicePosition current, int amount) {
+        int prevAmount = amount;
+        amount = current.addAmount(amount);
+        invoiceService.saveInvoice(current, prevAmount - amount);
         refreshTable();
         seriaLabel.setText(current.getSeria());
         nameLabel.setText(current.getNazwa());
         priceLabel.setText(Double.valueOf(current.getCena()).toString());
         dataLabel.setText(new SimpleDateFormat("dd-MM-yyyy").format(current.getData()));
         statusLabel.setText(current.getStatus());
+        return amount;
     }
 
-    private Optional<InvoicePosition> getCurrentInvoicePosition() {
-        Optional<InvoicePosition> any = invoicePositionData.stream()
+    private List<InvoicePosition> getCurrentInvoicePosition() {
+        List<InvoicePosition> ret = invoicePositionData.stream()
                 .filter(ip -> ip.getKodKr().equals(ean.getText()))
                 .filter(ip -> ip.isOpen())
-                .findFirst();
-        //jezeli nie ma znalezionej pozycji ale chce dalej dodac to wez pierwsza ktora ma taki sam kod ean
-        if (!any.isPresent()) {
-            any = invoicePositionData.stream()
+                .collect(Collectors.toList());
+        //jezeli nie ma znalezionej otwartej pozycji ale chce dalej dodac to wez wszystkie tez pelne wpisy
+        if (ret.isEmpty()) {
+            ret = invoicePositionData.stream()
                     .filter(ip -> ip.getKodKr().equals(ean.getText()))
-                    .findFirst();
+                    .collect(Collectors.toList());
         }
-        return any;
+        return ret;
     }
 
     private int getAmount() {
@@ -214,6 +252,7 @@ public class InvoiceDetailsController {
     }
 
     private void refreshTable() {
+        Collections.sort(invoicePositionData);
         invoicePositionTable.getColumns().stream()
                 .forEach(col->{
                     col.setVisible(false);
@@ -245,7 +284,9 @@ public class InvoiceDetailsController {
 
     public void setInvoice(Invoice invoice) {
         invoicePositionData.removeAll(invoicePositionData);
-        invoicePositionData.addAll(invoiceService.getInvoicePositions(invoice.getDokfId()));
+        List<InvoicePosition> invoicePositions = invoiceService.getInvoicePositions(invoice.getDokfId());
+        Collections.sort(invoicePositions);
+        invoicePositionData.addAll(invoicePositions);
     }
 
     public Long getAmountOfProcessedGoods() {
@@ -269,6 +310,7 @@ public class InvoiceDetailsController {
                 invoiceService.saveInvoice(current, current.getIlzkl());
                 updateItem(false, false);
                 updateItemStyle(current, false, ButtonCell.this.getTableRow().getStyleClass());
+                Collections.sort(invoicePositionData);
             });
         }
 
