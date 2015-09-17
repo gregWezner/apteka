@@ -52,7 +52,7 @@ public class InjectorInitializer {
 
                         });
                         try {
-                            bindProperties(binder(), loadProperties("com/apteka/faktura/dbApteka.properties"));
+                            bindProperties(binder(), loadProperties("dbApteka.properties"));
                         } catch (IOException e) {
                             System.exit(1);
                         }
@@ -78,7 +78,7 @@ public class InjectorInitializer {
 
                         });
                         try {
-                            bindProperties(binder(), loadProperties("com/apteka/faktura/dbPrzyjecie.properties"));
+                            bindProperties(binder(), loadProperties("dbPrzyjecie.properties"));
                         } catch (IOException e) {
                             System.exit(1);
                         }
@@ -91,7 +91,7 @@ public class InjectorInitializer {
         );
         modules.add(binder -> {
             try {
-                bindProperties(binder, loadProperties("com/apteka/faktura/global.properties"));
+                bindProperties(binder, loadProperties("global.properties"));
             } catch (IOException e) {
                 System.exit(1);
             }

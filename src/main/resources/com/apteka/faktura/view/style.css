@@ -16,3 +16,16 @@
 .bigColumn{
     -fx-cell-size: 50%;
 }
+
+.label {
+    -fx-font-size: 20px;
+    -fx-text-fill: black;
+    -fx-opacity: 1;
+}
+
+.text-field {
+    -fx-font-size: 20px;
+    -fx-text-fill: black;
+    -fx-opacity: 1;
+    -fx-min-height: 30px;
+}
